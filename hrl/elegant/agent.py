@@ -153,13 +153,13 @@ class AgentDQN(AgentBase):
     def update_net(self, buffer: ReplayBuffer, target_step, batch_size, repeat_times):
         buffer.update_now_len_before_sample()
 
+        q_value = obj_critic = None
         for _ in range(int(target_step * repeat_times)):
             reward, mask, action, state, next_s = map(
                 tf.convert_to_tensor, buffer.sample_batch(batch_size))
             action = tf.cast(action, tf.int32)
             obj_critic, q_value = self._update(reward, mask, action, state, next_s)
 
-        # noinspection PyUnboundLocalVariable
         return tf.reduce_mean(q_value).numpy(), obj_critic.numpy()
 
 
@@ -284,13 +284,14 @@ class AgentPPO(AgentBase):
 
         buf_logprob = categorial_log_prob(buf_action, buf_logits)
 
+        obj_actor = tf.zeros(())
+        obj_critic = tf.zeros(())
         for _i in tf.range(repeat_times * buf_len // batch_size):
             indices = tf.random.uniform((batch_size,), 0, buf_len, dtype=tf.int32)
             state, action, Q_values, logprob, advantage = map(
                 lambda x: tf.gather(x, indices), [buf_state, buf_action, buf_r_sum, buf_logprob, buf_advantage])
             obj_actor, obj_critic = self._update_step(state, action, Q_values, logprob, advantage)
 
-        # noinspection PyUnboundLocalVariable
         return obj_actor, obj_critic
 
     def _update_step(self, state, action, r_sum, logprob, advantage):
