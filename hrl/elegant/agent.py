@@ -117,7 +117,7 @@ class AgentDQN(AgentBase):
 
         self.cri_optimizer = Adam(self.learning_rate)
 
-    @tf.function(jit_compile=True)
+    @tf.function(experimental_compile=True)
     def _select_action(self, state):
         if tf.random.uniform(()) < self.explore_rate:  # epsilon-greedy
             action = tf.random.uniform((), 0, self.action_dim, dtype=tf.int32)
@@ -142,7 +142,7 @@ class AgentDQN(AgentBase):
             obj_critic = tf.reduce_mean(obj_critic)
         return tape, obj_critic, q_value
 
-    @tf.function(jit_compile=True)
+    @tf.function(experimental_compile=True)
     def _update(self, reward, mask, action, state, next_s):
         tape, obj_critic, q_value = self.get_obj_critic(reward, mask, action, state, next_s)
         grads = tape.gradient(obj_critic, self.cri.trainable_variables)
@@ -189,7 +189,7 @@ class AgentDoubleDQN(AgentDQN):
 
         self.cri_optimizer = Adam(self.learning_rate)
 
-    @tf.function(jit_compile=True)
+    @tf.function(experimental_compile=True)
     def _select_action(self, state):
         logits = self.act(state[None])[0]
         if tf.random.uniform(()) < self.explore_rate:  # epsilon-greedy
@@ -236,7 +236,7 @@ class AgentPPO(AgentBase):
         self.optimizer = Adam(self.learning_rate)
         self.criterion = smooth_l1_loss(reduction='none')
 
-    @tf.function(jit_compile=True)
+    @tf.function(experimental_compile=True)
     def _select_action(self, state):
         logits = self.act(state[None])[0]
         action = categorial_sample(logits)
@@ -267,7 +267,7 @@ class AgentPPO(AgentBase):
             buf_reward, buf_mask, buf_action, buf_logits, buf_state, batch_size, repeat_times)
         return obj_actor.numpy(), obj_critic.numpy()
 
-    @tf.function(jit_compile=True)
+    @tf.function(experimental_compile=True)
     def _update_net(self, buf_reward, buf_mask, buf_action, buf_logits, buf_state, batch_size, repeat_times):
         buf_len = buf_reward.shape[0]
 

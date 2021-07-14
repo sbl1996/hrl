@@ -34,7 +34,7 @@ class DQNPolicy:
     def set_eps(self, eps: Union[float, tf.Tensor]):
         self.eps.assign(eps)
 
-    @tf.function(jit_compile=True)
+    @tf.function(experimental_compile=True)
     def select_action(self, obs: tf.Tensor) -> tf.Tensor:
         n = tf.shape(obs)[0]
         logits = self.policy_net(obs, training=False)
@@ -53,7 +53,7 @@ class DQNPolicy:
         done = to_tensor(batch.done)
         self._optimize(obs, action, obs_next, reward, done)
 
-    @tf.function(jit_compile=True)
+    @tf.function(experimental_compile=True)
     def _optimize(self, obs, action, obs_next, reward, done):
         # reward_mean = tf.reduce_mean(reward)
         # reward_std = tf.math.reduce_std(reward)
