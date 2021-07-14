@@ -1,13 +1,6 @@
 import numpy as np
 
-from numba import njit
-
 import tensorflow as tf
-from tensorflow.keras.optimizers import Adam
-
-from hanser.losses import smooth_l1_loss
-
-from hrl.elegant.net import QNet, QNetTwin, CriticAdv, ActorPPO
 
 
 class ReplayBuffer:
@@ -49,14 +42,6 @@ class ReplayBuffer:
                 all_other[:, 3:],  # logits
                 self.buf_state[:self.now_len])  # state
 
-    # def sample_all(self) -> tuple:
-    #     all_other = tf.convert_to_tensor(self.buf_other[:self.now_len])
-    #     return (all_other[:, 0],  # reward
-    #             all_other[:, 1],  # mask = 0.0 if done else gamma
-    #             all_other[:, 2:2 + self.action_dim],  # action
-    #             all_other[:, 2 + self.action_dim:],  # noise
-    #             tf.convert_to_tensor(self.buf_state[:self.now_len]))  # state
-
     def update_now_len_before_sample(self):
         self.now_len = self.max_len if self.full else self.next_idx
 
@@ -69,16 +54,13 @@ class ReplayBuffer:
 class AgentBase:
     def __init__(self):
         self.soft_update_tau = 5e-3
-        self.criterion = smooth_l1_loss(reduction='none')
+        self.criterion = None
         self.state = None
 
         self.act = self.act_target = None
         self.cri = self.cri_target = None
         self.act_optimizer = None
         self.cri_optimizer = None
-
-    def init(self, net_dim, state_dim, action_dim):
-        pass
 
     def select_action(self, state) -> np.ndarray:
         pass  # return action
@@ -98,24 +80,21 @@ class AgentBase:
             tar.assign(cur * tau + tar * (1 - tau))
 
 
-
 class AgentDQN(AgentBase):
-    def __init__(self, learning_rate=1e-4, explore_rate=0.1):
+    def __init__(self, critic_fn, cri_optimizer, criterion, explore_rate=0.1):
         super().__init__()
-        self.learning_rate = learning_rate
+        self.cri = critic_fn()
+        self.cri.build((None, self.cri.in_channels))
+        self.cri_target = critic_fn()
+        self.cri_target.build((None, self.cri_target.in_channels))
+        self.act = self.cri
+
+        self.cri_optimizer = cri_optimizer
+        self.criterion = criterion
+
         self.explore_rate = explore_rate  # the probability of choosing action randomly in epsilon-greedy
-        self.action_dim = None  # chose discrete action randomly in epsilon-greedy
 
-    def init(self, net_dim, state_dim, action_dim):  # explict call self.init() for multiprocessing
-        self.action_dim = action_dim
-
-        self.cri = QNet(net_dim, state_dim, action_dim)
-        self.cri.build((None, state_dim))
-        self.cri_target = QNet(net_dim, state_dim, action_dim)
-        self.cri_target.build((None, state_dim))
-        self.act = self.cri  # to keep the same from Actor-Critic framework
-
-        self.cri_optimizer = Adam(self.learning_rate)
+        self.action_dim = self.cri.out_channels  # chose discrete action randomly in epsilon-greedy
 
     @tf.function(experimental_compile=True)
     def _select_action(self, state):
@@ -174,20 +153,6 @@ def categorial_sample(logits):
 
 
 class AgentDoubleDQN(AgentDQN):
-    def __init__(self, explore_rate=0.25):
-        super().__init__()
-        self.explore_rate = explore_rate  # the probability of choosing action randomly in epsilon-greedy
-
-    def init(self, net_dim, state_dim, action_dim):
-        self.action_dim = action_dim
-
-        self.cri = QNetTwin(net_dim, state_dim, action_dim)
-        self.cri.build((None, state_dim))
-        self.cri_target = QNetTwin(net_dim, state_dim, action_dim)
-        self.cri_target.build((None, state_dim))
-        self.act = self.cri
-
-        self.cri_optimizer = Adam(self.learning_rate)
 
     @tf.function(experimental_compile=True)
     def _select_action(self, state):
@@ -215,26 +180,23 @@ class AgentDoubleDQN(AgentDQN):
 
 
 class AgentPPO(AgentBase):
-    def __init__(self, learning_rate=1e-4, ratio_clip=0.2, lambda_entropy=0.01, use_gae=True, lambda_gae=0.98):
+    def __init__(self, actor_fn, critic_fn, optimizer, criterion,
+        ratio_clip=0.2, lambda_entropy=0.01, use_gae=True, lambda_gae=0.98):
         super().__init__()
-        self.learning_rate = learning_rate
+
+        self.act = actor_fn()
+        self.cri = critic_fn()
+        self.act.build((None, self.act.in_channels))
+        self.cri.build((None, self.cri.in_channels))
+
+        self.optimizer = optimizer
+        self.criterion = criterion
+        
         self.ratio_clip = ratio_clip  # could be 0.2 ~ 0.5, ratio.clamp(1 - clip, 1 + clip),
         self.lambda_entropy = lambda_entropy  # could be 0.01 ~ 0.05
         self.use_gae = use_gae  # if use Generalized Advantage Estimation
         self.lambda_gae = lambda_gae  # could be 0.95 ~ 0.99, GAE (Generalized Advantage Estimation. ICLR.2016.)
         self.on_policy = True  # AgentPPO is an on policy DRL algorithm
-
-        self.optimizer = None
-
-    def init(self, net_dim, state_dim, action_dim):
-
-        self.cri = CriticAdv(state_dim, net_dim)
-        self.cri.build((None, state_dim))
-        self.act = ActorPPO(net_dim, state_dim, action_dim)
-        self.act.build((None, state_dim))
-
-        self.optimizer = Adam(self.learning_rate)
-        self.criterion = smooth_l1_loss(reduction='none')
 
     @tf.function(experimental_compile=True)
     def _select_action(self, state):

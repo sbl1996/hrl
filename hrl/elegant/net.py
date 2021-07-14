@@ -1,6 +1,5 @@
 import tensorflow as tf
 from tensorflow.keras import Model, Sequential
-from tensorflow.keras.initializers import Constant
 
 from hanser.models.layers import Linear
 
@@ -14,6 +13,8 @@ class QNet(Model):
             Linear(mid_dim, mid_dim, act='relu'),
             Linear(mid_dim, action_dim)]
         )
+        self.in_channels = state_dim
+        self.out_channels = action_dim
 
     def call(self, state):
         return self.net(state)  # Q value
@@ -34,6 +35,8 @@ class QNetTwin(Model):  # Double DQN
             Linear(mid_dim, mid_dim, act='relu'),
             Linear(mid_dim, action_dim),
         ])  # Q2 value
+        self.in_channels = state_dim
+        self.out_channels = action_dim
 
     def call(self, state):
         tmp = self.net_state(state)
@@ -55,6 +58,8 @@ class Actor(Model):
             Linear(mid_dim, mid_dim, act='relu'),
             Linear(mid_dim, action_dim),
         ])
+        self.in_channels = state_dim
+        self.out_channels = action_dim
 
     def call(self, state):
         output = self.net(state)
@@ -78,6 +83,8 @@ class ActorPPO(Model):
             Linear(mid_dim, mid_dim, act='relu'),
             Linear(mid_dim, action_dim),
         ])
+        self.in_channels = state_dim
+        self.out_channels = action_dim
 
     def call(self, state):
         return self.net(state)
@@ -129,6 +136,8 @@ class Critic(Model):
             Linear(mid_dim, mid_dim, act='relu'),
             Linear(mid_dim, 1)
         ])
+        self.in_channels = state_dim + action_dim
+        self.out_channels = 1
 
     def call(self, state, action):
         return self.net(tf.concat((state, action), axis=1))  # q value
@@ -143,6 +152,8 @@ class CriticAdv(Model):
             Linear(mid_dim, mid_dim, act='relu'),
             Linear(mid_dim, 1),
         ])
+        self.in_channels = state_dim
+        self.out_channels = 1
 
     def call(self, state):
         return self.net(state)  # Q value
@@ -163,6 +174,8 @@ class CriticTwin(Model):  # shared parameter
             Linear(mid_dim, mid_dim, act='swish'),
             Linear(mid_dim, 1),
         ])  # q2 value
+        self.in_channels = state_dim + action_dim
+        self.out_channels = 1
 
     def call(self, state, action):
         tmp = self.net_sa(tf.concat((state, action), axis=1))
