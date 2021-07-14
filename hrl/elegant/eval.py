@@ -21,7 +21,7 @@ class Evaluator:
         self.print_time = time.time()
         print(f"{'ID':>2}  {'Step':>8}  {'MaxR':>8} |{'avgR':>8}  {'stdR':>8}   {'objA':>8}  {'objC':>8}")
 
-    def evaluate_save(self, act, steps, obj_a, obj_c) -> bool:
+    def evaluate(self, act, steps, obj_a, obj_c) -> bool:
         reward_list = [get_episode_return(self.env, act) for _ in range(self.eval_times)]
         r_avg = np.mean(reward_list)  # episode return average
         r_std = float(np.std(reward_list))  # episode return std

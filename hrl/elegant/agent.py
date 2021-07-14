@@ -68,7 +68,6 @@ class ReplayBuffer:
 
 class AgentBase:
     def __init__(self):
-        self.learning_rate = 1e-4
         self.soft_update_tau = 5e-3
         self.criterion = smooth_l1_loss(reduction='none')
         self.state = None
@@ -84,7 +83,7 @@ class AgentBase:
     def select_action(self, state) -> np.ndarray:
         pass  # return action
 
-    def explore_env(self, env, buffer: ReplayBuffer, target_step, reward_scale, gamma) -> int:
+    def explore_env(self, env, buffer: ReplayBuffer, target_step, gamma, reward_scale=1.0) -> int:
         for _ in range(target_step):
             action = self.select_action(self.state)
             next_s, reward, done, _ = env.step(action)
@@ -101,8 +100,9 @@ class AgentBase:
 
 
 class AgentDQN(AgentBase):
-    def __init__(self, explore_rate=0.1):
+    def __init__(self, learning_rate=1e-4, explore_rate=0.1):
         super().__init__()
+        self.learning_rate = learning_rate
         self.explore_rate = explore_rate  # the probability of choosing action randomly in epsilon-greedy
         self.action_dim = None  # chose discrete action randomly in epsilon-greedy
 
@@ -150,7 +150,7 @@ class AgentDQN(AgentBase):
         self.soft_update(self.cri_target, self.cri, self.soft_update_tau)
         return obj_critic, q_value
 
-    def update_net(self, buffer: ReplayBuffer, target_step, batch_size, repeat_times):
+    def update_net(self, buffer: ReplayBuffer, target_step, batch_size, repeat_times=1):
         buffer.update_now_len_before_sample()
 
         q_value = obj_critic = None
@@ -215,7 +215,7 @@ class AgentDoubleDQN(AgentDQN):
 
 
 class AgentPPO(AgentBase):
-    def __init__(self, learning_rate=1e-4, ratio_clip=0.3, lambda_entropy=0.04, use_gae=True, lambda_gae=0.97):
+    def __init__(self, learning_rate=1e-4, ratio_clip=0.2, lambda_entropy=0.01, use_gae=True, lambda_gae=0.98):
         super().__init__()
         self.learning_rate = learning_rate
         self.ratio_clip = ratio_clip  # could be 0.2 ~ 0.5, ratio.clamp(1 - clip, 1 + clip),
@@ -247,7 +247,7 @@ class AgentPPO(AgentBase):
         action, logits = self._select_action(state)
         return action.numpy(), logits.numpy()
 
-    def explore_env(self, env, buffer, target_step, reward_scale, gamma) -> int:
+    def explore_env(self, env, buffer, target_step, gamma, reward_scale=1.0) -> int:
         buffer.empty_buffer_before_explore()  # necessary for on-policy
         state = env.reset()
         for _ in range(target_step):
@@ -258,7 +258,7 @@ class AgentPPO(AgentBase):
             state = env.reset() if done else next_state
         return target_step
 
-    def update_net(self, buffer: ReplayBuffer, target_step, batch_size, repeat_times=4) -> (float, float):
+    def update_net(self, buffer: ReplayBuffer, target_step, batch_size, repeat_times=4):
         buffer.update_now_len_before_sample()
         assert buffer.now_len == target_step
         buf_reward, buf_mask, buf_action, buf_logits, buf_state = map(

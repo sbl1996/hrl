@@ -1,3 +1,4 @@
+from typing import Tuple
 import gym
 import numpy as np
 
@@ -15,12 +16,12 @@ class PreprocessEnv(gym.Wrapper):  # environment wrapper
         state = self.env.reset()
         return state.astype(np.float32)
 
-    def step_type(self, action) -> (np.ndarray, float, bool, dict):
+    def step_type(self, action) -> Tuple[np.ndarray, float, bool, dict]:
         state, reward, done, info = self.env.step(action * self.action_max)
         return state.astype(np.float32), reward, done, info
 
 
-def get_gym_env_info(env, if_print) -> (str, int, int, int, int, bool, float):
+def get_gym_env_info(env, if_print) -> Tuple[str, int, int, int, int, bool, float]:
     import gym  # gym of OpenAI is not necessary for ElegantRL (even RL)
     gym.logger.set_level(40)  # Block warning: 'WARN: Box bound precision lowered by casting to float32'
     assert isinstance(env, gym.Env)
