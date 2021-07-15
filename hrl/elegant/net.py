@@ -24,15 +24,15 @@ class QNetTwin(Model):  # Double DQN
     def __init__(self, mid_dim, state_dim, action_dim, act='tanh'):
         super().__init__()
         self.net_state = Sequential([
-            Linear(state_dim, mid_dim, act=act),
-            Linear(mid_dim, mid_dim, act=act),
+            Linear(state_dim, mid_dim, act=act, bias_init='zeros'),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
         ])
         self.net_q1 = Sequential([
-            Linear(mid_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
             Linear(mid_dim, action_dim),
         ])  # Q1 value
         self.net_q2 = Sequential([
-            Linear(mid_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
             Linear(mid_dim, action_dim),
         ])  # Q2 value
         self.in_channels = state_dim
@@ -53,9 +53,9 @@ class Actor(Model):
     def __init__(self, mid_dim, state_dim, action_dim, act='tanh'):
         super().__init__()
         self.net = Sequential([
-            Linear(state_dim, mid_dim, act=act),
-            Linear(mid_dim, mid_dim, act=act),
-            Linear(mid_dim, mid_dim, act=act),
+            Linear(state_dim, mid_dim, act=act, bias_init='zeros'),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
             Linear(mid_dim, action_dim),
         ])
         self.in_channels = state_dim
@@ -78,9 +78,9 @@ class ActorPPO(Model):
     def __init__(self, mid_dim, state_dim, action_dim, act='tanh'):
         super().__init__()
         self.net = Sequential([
-            Linear(state_dim, mid_dim, act=act),
-            Linear(mid_dim, mid_dim, act=act),
-            Linear(mid_dim, mid_dim, act=act),
+            Linear(state_dim, mid_dim, act=act, bias_init='zeros'),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
             Linear(mid_dim, action_dim),
         ])
         self.in_channels = state_dim
@@ -93,7 +93,7 @@ class ActorPPO(Model):
 # class ActorSAC(Model):
 #     def __init__(self, mid_dim, state_dim, action_dim):
 #         super().__init__()
-#         self.net_state = Sequential([Linear(state_dim, mid_dim, act=act),
+#         self.net_state = Sequential([Linear(state_dim, mid_dim, act=act, bias_init='zeros'),
 #                                      Linear(mid_dim, mid_dim, act=act)])
 #         self.net_a_avg = Sequential([Linear(mid_dim, mid_dim, act='swish'),
 #                                      Linear(mid_dim, action_dim)])  # the average of action
@@ -132,8 +132,8 @@ class ActorPPO(Model):
 #     def __init__(self, mid_dim, state_dim, action_dim, act='tanh'):
 #         super().__init__()
 #         self.net = Sequential([
-#             Linear(state_dim + action_dim, mid_dim, act=act),
-#             Linear(mid_dim, mid_dim, act=act),
+#             Linear(state_dim + action_dim, mid_dim, act=act, bias_init='zeros'),
+#             Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
 #             Linear(mid_dim, 1)
 #         ])
 #         self.in_channels = state_dim + action_dim
@@ -147,9 +147,9 @@ class CriticAdv(Model):
     def __init__(self, mid_dim, state_dim, act='tanh'):
         super().__init__()
         self.net = Sequential([
-            Linear(state_dim, mid_dim, act=act),
-            Linear(mid_dim, mid_dim, act=act),
-            Linear(mid_dim, mid_dim, act=act),
+            Linear(state_dim, mid_dim, act=act, bias_init='zeros'),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
             Linear(mid_dim, 1),
         ])
         self.in_channels = state_dim
@@ -163,15 +163,15 @@ class CriticTwin(Model):  # shared parameter
     def __init__(self, mid_dim, state_dim, action_dim, act='tanh'):
         super().__init__()
         self.net_sa = Sequential([
-            Linear(state_dim + action_dim, mid_dim, act=act),
-            Linear(mid_dim, mid_dim, act=act),
+            Linear(state_dim + action_dim, mid_dim, act=act, bias_init='zeros'),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
         ])  # concat(state, action)
         self.net_q1 = Sequential([
-            Linear(mid_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
             Linear(mid_dim, 1),
         ])  # q1 value
         self.net_q2 = Sequential([
-            Linear(mid_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act, bias_init='zeros'),
             Linear(mid_dim, 1),
         ])  # q2 value
         self.in_channels = state_dim + action_dim
