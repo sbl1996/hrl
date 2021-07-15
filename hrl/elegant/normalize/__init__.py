@@ -1,0 +1,1 @@
+from hrl.elegant.normalize.input_normalization import InputNormalization
