@@ -1,9 +1,8 @@
-from hrl.elegant.normalize.input_normalization import InputNormalization
 import numpy as np
 
 import tensorflow as tf
 
-from hrl.elegant.utils import categorial_entropy, categorial_log_prob, categorial_sample, normalize
+from hrl.elegant.utils import categorial_entropy, categorial_log_prob, categorial_sample
 
 class ReplayBuffer:
     def __init__(self, max_len, state_dim, action_dim, on_policy):
@@ -173,8 +172,7 @@ class AgentDoubleDQN(AgentDQN):
 
 class AgentPPO(AgentBase):
     def __init__(self, actor_fn, critic_fn, optimizer, criterion,
-        ratio_clip=0.25, lambda_entropy=0.01, use_gae=True, lambda_gae=0.95,
-        normalize_input=False):
+        ratio_clip=0.25, lambda_entropy=0.01, use_gae=True, lambda_gae=0.95):
         super().__init__()
 
         self.act = actor_fn()
@@ -192,17 +190,9 @@ class AgentPPO(AgentBase):
         self.lambda_gae = lambda_gae  # could be 0.95 ~ 0.99, GAE (Generalized Advantage Estimation. ICLR.2016.)
         self.on_policy = True  # AgentPPO is an on policy DRL algorithm
 
-        self.normalize_input = normalize_input
-        if self.normalize_input:
-            self.input_normalizer = InputNormalization()
-            self.input_normalizer.init(self.act.in_channels)
-
     @tf.function(experimental_compile=True)
     def _select_action(self, state):
         state = state[None]
-        if self.normalize_input:
-            self.input_normalizer.update(state)
-            state = self.input_normalizer.normalize(state)
         logits = self.act(state)[0]
         action = categorial_sample(logits)
         return action, logits
@@ -235,10 +225,6 @@ class AgentPPO(AgentBase):
     @tf.function(experimental_compile=True)
     def _update_net(self, buf_reward, buf_mask, buf_action, buf_logits, buf_state, batch_size, repeat_times):
         buf_len = buf_reward.shape[0]
-
-        if self.normalize_input:
-            self.input_normalizer.update(buf_state)
-            buf_state = self.input_normalizer.normalize(buf_state)
 
         buf_value = tf.concat([
             self.cri(buf_state[i:i + batch_size]) for i in range(0, buf_len, batch_size)], axis=0)[:, 0]
