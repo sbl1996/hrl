@@ -5,12 +5,12 @@ from hanser.models.layers import Linear
 
 
 class QNet(Model):
-    def __init__(self, mid_dim, state_dim, action_dim):
+    def __init__(self, mid_dim, state_dim, action_dim, act='tanh'):
         super().__init__()
         self.net = Sequential([
-            Linear(state_dim, mid_dim, act='relu'),
-            Linear(mid_dim, mid_dim, act='relu'),
-            Linear(mid_dim, mid_dim, act='relu'),
+            Linear(state_dim, mid_dim, act),
+            Linear(mid_dim, mid_dim, act),
+            Linear(mid_dim, mid_dim, act),
             Linear(mid_dim, action_dim)]
         )
         self.in_channels = state_dim
@@ -21,18 +21,18 @@ class QNet(Model):
 
 
 class QNetTwin(Model):  # Double DQN
-    def __init__(self, mid_dim, state_dim, action_dim):
+    def __init__(self, mid_dim, state_dim, action_dim, act='tanh'):
         super().__init__()
         self.net_state = Sequential([
-            Linear(state_dim, mid_dim, act='relu'),
-            Linear(mid_dim, mid_dim, act='relu'),
+            Linear(state_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act),
         ])
         self.net_q1 = Sequential([
-            Linear(mid_dim, mid_dim, act='relu'),
+            Linear(mid_dim, mid_dim, act=act),
             Linear(mid_dim, action_dim),
         ])  # Q1 value
         self.net_q2 = Sequential([
-            Linear(mid_dim, mid_dim, act='relu'),
+            Linear(mid_dim, mid_dim, act=act),
             Linear(mid_dim, action_dim),
         ])  # Q2 value
         self.in_channels = state_dim
@@ -50,12 +50,12 @@ class QNetTwin(Model):  # Double DQN
 
 
 class Actor(Model):
-    def __init__(self, mid_dim, state_dim, action_dim):
+    def __init__(self, mid_dim, state_dim, action_dim, act='tanh'):
         super().__init__()
         self.net = Sequential([
-            Linear(state_dim, mid_dim, act='relu'),
-            Linear(mid_dim, mid_dim, act='relu'),
-            Linear(mid_dim, mid_dim, act='relu'),
+            Linear(state_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act),
             Linear(mid_dim, action_dim),
         ])
         self.in_channels = state_dim
@@ -75,12 +75,12 @@ class Actor(Model):
 
 
 class ActorPPO(Model):
-    def __init__(self, mid_dim, state_dim, action_dim):
+    def __init__(self, mid_dim, state_dim, action_dim, act='tanh'):
         super().__init__()
         self.net = Sequential([
-            Linear(state_dim, mid_dim, act='relu'),
-            Linear(mid_dim, mid_dim, act='relu'),
-            Linear(mid_dim, mid_dim, act='relu'),
+            Linear(state_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act),
             Linear(mid_dim, action_dim),
         ])
         self.in_channels = state_dim
@@ -93,8 +93,8 @@ class ActorPPO(Model):
 # class ActorSAC(Model):
 #     def __init__(self, mid_dim, state_dim, action_dim):
 #         super().__init__()
-#         self.net_state = Sequential([Linear(state_dim, mid_dim, act='relu'),
-#                                      Linear(mid_dim, mid_dim, act='relu')])
+#         self.net_state = Sequential([Linear(state_dim, mid_dim, act=act),
+#                                      Linear(mid_dim, mid_dim, act=act)])
 #         self.net_a_avg = Sequential([Linear(mid_dim, mid_dim, act='swish'),
 #                                      Linear(mid_dim, action_dim)])  # the average of action
 #         self.net_a_std = Sequential([Linear(mid_dim, mid_dim, act='swish'),
@@ -128,28 +128,28 @@ class ActorPPO(Model):
 #         return a_tan, logprob.sum(1, keepdim=True)
 
 
-class Critic(Model):
-    def __init__(self, mid_dim, state_dim, action_dim):
-        super().__init__()
-        self.net = Sequential([
-            Linear(state_dim + action_dim, mid_dim, act='relu'),
-            Linear(mid_dim, mid_dim, act='relu'),
-            Linear(mid_dim, 1)
-        ])
-        self.in_channels = state_dim + action_dim
-        self.out_channels = 1
+# class Critic(Model):
+#     def __init__(self, mid_dim, state_dim, action_dim, act='tanh'):
+#         super().__init__()
+#         self.net = Sequential([
+#             Linear(state_dim + action_dim, mid_dim, act=act),
+#             Linear(mid_dim, mid_dim, act=act),
+#             Linear(mid_dim, 1)
+#         ])
+#         self.in_channels = state_dim + action_dim
+#         self.out_channels = 1
 
-    def call(self, state, action):
-        return self.net(tf.concat((state, action), axis=1))  # q value
+#     def call(self, state, action):
+#         return self.net(tf.concat((state, action), axis=1))  # q value
 
 
 class CriticAdv(Model):
-    def __init__(self, mid_dim, state_dim):
+    def __init__(self, mid_dim, state_dim, act='tanh'):
         super().__init__()
         self.net = Sequential([
-            Linear(state_dim, mid_dim, act='relu'),
-            Linear(mid_dim, mid_dim, act='relu'),
-            Linear(mid_dim, mid_dim, act='relu'),
+            Linear(state_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act),
             Linear(mid_dim, 1),
         ])
         self.in_channels = state_dim
@@ -160,18 +160,18 @@ class CriticAdv(Model):
 
 
 class CriticTwin(Model):  # shared parameter
-    def __init__(self, mid_dim, state_dim, action_dim):
+    def __init__(self, mid_dim, state_dim, action_dim, act='tanh'):
         super().__init__()
         self.net_sa = Sequential([
-            Linear(state_dim + action_dim, mid_dim, act='relu'),
-            Linear(mid_dim, mid_dim, act='relu'),
+            Linear(state_dim + action_dim, mid_dim, act=act),
+            Linear(mid_dim, mid_dim, act=act),
         ])  # concat(state, action)
         self.net_q1 = Sequential([
-            Linear(mid_dim, mid_dim, act='swish'),
+            Linear(mid_dim, mid_dim, act=act),
             Linear(mid_dim, 1),
         ])  # q1 value
         self.net_q2 = Sequential([
-            Linear(mid_dim, mid_dim, act='swish'),
+            Linear(mid_dim, mid_dim, act=act),
             Linear(mid_dim, 1),
         ])  # q2 value
         self.in_channels = state_dim + action_dim

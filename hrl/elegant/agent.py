@@ -181,7 +181,7 @@ class AgentDoubleDQN(AgentDQN):
 
 class AgentPPO(AgentBase):
     def __init__(self, actor_fn, critic_fn, optimizer, criterion,
-        ratio_clip=0.2, lambda_entropy=0.01, use_gae=True, lambda_gae=0.98):
+        ratio_clip=0.25, lambda_entropy=0.01, use_gae=True, lambda_gae=0.98):
         super().__init__()
 
         self.act = actor_fn()
