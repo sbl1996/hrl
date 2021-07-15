@@ -2,6 +2,7 @@ import numpy as np
 
 import tensorflow as tf
 
+from hrl.elegant.utils import categorial_entropy, categorial_log_prob, categorial_sample, normalize
 
 class ReplayBuffer:
     def __init__(self, max_len, state_dim, action_dim, on_policy):
@@ -142,16 +143,6 @@ class AgentDQN(AgentBase):
         return tf.reduce_mean(q_value).numpy(), obj_critic.numpy()
 
 
-def categorial_log_prob(action, logits):
-    return -tf.keras.losses.sparse_categorical_crossentropy(
-        action, logits, from_logits=True)
-
-
-def categorial_sample(logits):
-    u = tf.random.uniform(tf.shape(logits), dtype=logits.dtype)
-    return tf.argmax(logits - tf.math.log(-tf.math.log(u)), axis=-1, output_type=tf.int32)
-
-
 class AgentDoubleDQN(AgentDQN):
 
     @tf.function(experimental_compile=True)
@@ -266,8 +257,7 @@ class AgentPPO(AgentBase):
             obj_surrogate2 = advantage * tf.clip_by_value(ratio, 1 - self.ratio_clip, 1 + self.ratio_clip)
             obj_surrogate = tf.reduce_mean(-tf.minimum(obj_surrogate1, obj_surrogate2))
             
-            all_probs = tf.nn.softmax(logits, axis=1)
-            obj_entropy = tf.reduce_sum(tf.math.log(all_probs) * all_probs, axis=1)
+            obj_entropy = categorial_entropy(logits)
             obj_entropy = tf.reduce_mean(obj_entropy)  # policy entropy
 
             obj_actor = obj_surrogate + obj_entropy * self.lambda_entropy
