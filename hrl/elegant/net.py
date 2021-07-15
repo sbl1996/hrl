@@ -144,7 +144,7 @@ class Critic(Model):
 
 
 class CriticAdv(Model):
-    def __init__(self, state_dim, mid_dim):
+    def __init__(self, mid_dim, state_dim):
         super().__init__()
         self.net = Sequential([
             Linear(state_dim, mid_dim, act='relu'),

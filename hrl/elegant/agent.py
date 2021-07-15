@@ -259,12 +259,17 @@ class AgentPPO(AgentBase):
     def _update_step(self, state, action, r_sum, logprob, advantage):
         with tf.GradientTape() as tape:
             logits = self.act(state)
+
             new_logprob = categorial_log_prob(action, logits)  # obj_actor
             ratio = tf.exp(new_logprob - logprob)
             obj_surrogate1 = advantage * ratio
             obj_surrogate2 = advantage * tf.clip_by_value(ratio, 1 - self.ratio_clip, 1 + self.ratio_clip)
             obj_surrogate = tf.reduce_mean(-tf.minimum(obj_surrogate1, obj_surrogate2))
-            obj_entropy = tf.reduce_mean(tf.exp(new_logprob) * new_logprob)  # policy entropy
+            
+            all_probs = tf.nn.softmax(logits, axis=1)
+            obj_entropy = tf.reduce_sum(tf.math.log(all_probs) * all_probs, axis=1)
+            obj_entropy = tf.reduce_mean(obj_entropy)  # policy entropy
+
             obj_actor = obj_surrogate + obj_entropy * self.lambda_entropy
 
             value = self.cri(state)[:, 0]  # critic network predicts the reward_sum (Q value) of state
